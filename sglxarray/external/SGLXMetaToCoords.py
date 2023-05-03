@@ -157,35 +157,47 @@ def NP10_ElecInd(meta):
 
 # Return x y coords for electrode index for NP1.0 or 3A
 #
-def XYCoord10(meta, elecInd, showPlot):
-    nElec = 960
-    # per shank; pattern repeats for the four shanks
-    vSep = 20
-    # in um
-    hSep = 32
+def XYCoord10(probe_type, elecInd, bankID=None, showPlot=False):
 
+    if probe_type==0:
+        nElec = 960 # per shank
+        vSep = 20 # in um
+        hSep = 32
+    elif probe_type==21:
+        nElec = 1280
+        vSep = 15
+        hSep = 32
+    elif probe_type==24:
+        nElec = 5120
+        vSep = 15
+        hSep = 32
+    else:
+        raise NotImplementedError("Only 1.0 and 2.0 probes supported")
+        
     elecPos = np.zeros((nElec, 2), dtype="float")
 
     # fill in x values
-    ind = np.arange(0, nElec, step=4, dtype="int")
-    elecPos[ind, 0] = hSep / 2  # sites 0,4,8...
-    ind = np.arange(1, nElec, step=4, dtype="int")
-    elecPos[ind, 0] = (3 / 2) * hSep  # sites 1,5,9...
-    ind = np.arange(2, nElec, step=4, dtype="int")
-    elecPos[ind, 0] = 0  # sites 2,6,10...
-    ind = np.arange(3, nElec, step=4, dtype="int")
-    elecPos[ind, 0] = hSep
-    # sites 3,7,11...
-    elecPos[:, 0] = elecPos[:, 0] + 11
-    # x offset on the shank
+    if probe_type==0: #4 columns
+        ind = np.arange(0, nElec, step=4, dtype="int")
+        elecPos[ind, 0] = hSep / 2  # sites 0,4,8...
+        ind = np.arange(2, nElec, step=4, dtype="int")
+        elecPos[ind, 0] = 0  # sites 2,6,10...
+        ind = np.arange(1, nElec, step=4, dtype="int")
+        elecPos[ind, 0] = (3 / 2) * hSep  # sites 1,5,9...
+        ind = np.arange(3, nElec, step=4, dtype="int")
+        elecPos[ind, 0] = hSep # sites 3,7,11...
+    elif (probe_type==21) or (probe_type==24): #2 columns
+        ind = np.arange(0, nElec, step=2, dtype="int")
+        elecPos[ind, 0] = 0  # sites 0,2,4,...
+        ind = np.arange(1, nElec, step=2, dtype="int")
+        elecPos[ind, 0] = hSep  # sites 1,3,5,...
 
     # fill in y values
     viHalf = np.arange(0, (nElec / 2), dtype="int")  # row numbers
     ind0 = np.arange(0, nElec, step=2, dtype="int")
     elecPos[ind0, 1] = viHalf * vSep  # sites 0,2,4...
     ind1 = np.arange(1, nElec, step=2, dtype="int")
-    elecPos[ind1, 1] = elecPos[ind0, 1]
-    # sites 1,3,5...
+    elecPos[ind1, 1] = elecPos[ind0, 1] # sites 1,3,5...
 
     xCoord = elecPos[elecInd, 0]
     yCoord = elecPos[elecInd, 1]

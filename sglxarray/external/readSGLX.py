@@ -32,7 +32,8 @@ from pathlib import Path
 # The string values are converted to numbers using the "int" and "float"
 # functions. Note that python 3 has no size limit for integers.
 #
-def readMeta(binFullPath):
+def readMeta(binPathString):
+    binFullPath = Path(binPathString)
     metaName = binFullPath.stem + ".meta"
     metaPath = Path(binFullPath.parent / metaName)
     metaDict = {}

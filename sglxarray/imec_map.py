@@ -48,14 +48,32 @@ def parse_imroTbl(imroTbl_string):
     channel_entries = entries[1:]
 
     probe_type, n_chans = (int(s) for s in header_entry.split(","))
-    assert probe_type == 0, "Only Neuropixel 1.0 probes are supported."
-    imro = pd.read_csv(
-        StringIO("\n".join(channel_entries)),
-        delim_whitespace=True,
-        names=["chan_id", "bank", "ref_id", "ap_gain", "lf_gain", "ap_highpass"],
-    )
-    imro["site"] = imro.bank.values * n_chans + imro.chan_id.values
-    imro["x"], imro["y"] = XYCoord10({}, imro.site.values, False)
+    if probe_type == 0:
+        imro = pd.read_csv(
+            StringIO("\n".join(channel_entries)),
+            delim_whitespace=True,
+            names=["chan_id", "bank", "ref_id", "ap_gain", "lf_gain", "ap_highpass"],
+        )
+        imro["site"] = imro.bank.values * n_chans + imro.chan_id.values
+    elif probe_type == 21:
+        raise NotImplementedError("Haven't implemented bank mask to bank code yet")
+        imro = pd.read_csv(
+            StringIO("\n".join(channel_entries)),
+            delim_whitespace=True,
+            names=["chan_id", "bank_mask", "ref_id", "elec_id"],
+        )
+        # TODO: add bank mask => bank code here
+        imro["site"] = imro.bank.values * n_chans + imro.elec_id.values
+    elif probe_type == 24:
+        imro = pd.read_csv(
+            StringIO("\n".join(channel_entries)),
+            delim_whitespace=True,
+            names=["chan_id", "shank", "bank", "ref_id", "elec_id"],
+        )
+        imro["site"] = imro.bank.values * n_chans + imro.elec_id.values
+    
+    imro["x"], imro["y"] = XYCoord10(probe_type, imro.site.values, imro.bank.values, False)
+    
     return imro
 
 
@@ -332,10 +350,10 @@ class ImecMap:
     @classmethod
     def from_meta(cls, meta):
         """Create an ImecMap object from the metadata associated with a binary file."""
-        validate_probe_type(meta)
+        #validate_probe_type(meta)
         imro = parse_imroTbl(meta["imroTbl"])
         cmp = parse_snsChanMap(meta["snsChanMap"])
-        map_name = PurePath(meta["imRoFile"]).stem
+        map_name = PurePath(meta["imroFile"]).stem
         nAP, nLF, nSY = ChannelCountsIM(meta)
         assert bool(nAP) != bool(nLF), "AP and LF channels should not both be present."
         stream_type = "LF" if bool(nLF) else "AP"
